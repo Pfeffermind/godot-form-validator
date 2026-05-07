@@ -51,6 +51,7 @@ func _on_validator_added() -> void:
 	var parent = get_parent()
 	if not parent or not validator:
 		return
+	validator.prepare(self, parent)
 	Validation.validator_added.emit(parent, validator)
 	update_configuration_warnings()
 

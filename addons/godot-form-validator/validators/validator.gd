@@ -10,7 +10,12 @@ class_name Validator
 var _messages: PackedStringArray = PackedStringArray()
 
 
-func get_value(control: Control):
+func prepare(validator: ControlValidator, control: Control) -> void:
+	for rule in rules:
+		rule.prepare(validator, control)
+
+
+func get_value(control: Control) -> Variant:
 	return null
 
 
@@ -35,3 +40,9 @@ func validate(control: Control) -> bool:
 			if validation_method != Validation.Method.BATCH:
 				return valid
 	return valid
+
+func get_valid_values(control: Control) -> Array[Variant]:
+	var valid_values: Array[Variant] = []
+	for rule in rules:
+		valid_values.append(rule.get_valid_values())
+	return valid_values

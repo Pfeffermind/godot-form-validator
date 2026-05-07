@@ -13,3 +13,6 @@ func apply(control: Control, value) -> RuleResult:
 	if not result.passed:
 		result.message = fail_message
 	return result
+
+func get_valid_values() -> Array[Variant]:
+	return [target_value]
