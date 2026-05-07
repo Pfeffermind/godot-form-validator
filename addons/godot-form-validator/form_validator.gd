@@ -1,5 +1,5 @@
 @tool
-extends Control
+extends Container
 class_name FormValidator
 
 signal control_validated(control, passed, messages)
@@ -39,6 +39,9 @@ func validate() -> bool:
 	var list = _get_validator_info_list()
 	var valid = true
 	for info in list:
+		if not _is_in_my_subtree(info.control):
+			continue
+
 		if info.validator.skip_validation:
 			continue
 		var passed = info.validator.validate(info.control)
@@ -88,6 +91,9 @@ func _find_validators(node: Node) -> void:
 func _auto_validate(control: Control) -> void:
 	if not auto_validate:
 		return
+	if not _is_in_my_subtree(control):
+		return
+
 	var validator = _control_validator_map[control] as Validator
 	if not validator:
 		return
@@ -98,6 +104,9 @@ func _auto_validate(control: Control) -> void:
 func _on_validator_added(control: Control, validator: Validator) -> void:
 	if not control:
 		return
+	if not _is_in_my_subtree(control):
+		return
+
 	_control_validator_map[control] = validator
 	if not control.focus_exited.is_connected(_on_control_focus_exited):
 		control.focus_exited.connect(_on_control_focus_exited.bind(control))
@@ -109,6 +118,9 @@ func _on_validator_added(control: Control, validator: Validator) -> void:
 
 
 func _on_validator_removed(control: Control) -> void:
+	if not _is_in_my_subtree(control):
+		return
+
 	_control_validator_map.erase(control)
 	if control.focus_exited.is_connected(_on_control_focus_exited):
 		control.focus_exited.disconnect(_on_control_focus_exited)
@@ -123,3 +135,30 @@ func _on_control_focus_exited(control: Control) -> void:
 
 func _on_control_value_changed(value: float, control: Control) -> void:
 	_auto_validate(control)
+
+
+func _get_minimum_size() -> Vector2:
+	var result := Vector2.ZERO
+
+	for child in get_children():
+		if child is Control and child.visible:
+			var min_size := (child as Control).get_combined_minimum_size()
+			result.x = max(result.x, min_size.x)
+			result.y += min_size.y
+
+	return result
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_SORT_CHILDREN:
+		var y := 0.0
+
+		for child in get_children():
+			if child is Control and child.visible:
+				var min_size := (child as Control).get_combined_minimum_size()
+				fit_child_in_rect(child, Rect2(0, y, size.x, min_size.y))
+				y += min_size.y
+
+
+func _is_in_my_subtree(control: Control) -> bool:
+	return control != null and (control == self or is_ancestor_of(control))
